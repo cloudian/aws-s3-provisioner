@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hs-s3-provisioner-deployment
+  namespace: s3-provisioner
+  labels:
+    app: aws-s3-provisioner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aws-s3-provisioner
+  template:
+    metadata:
+      labels:
+        app: aws-s3-provisioner
+    spec:
+      containers:
+      - name: hs-s3-provisioner
+        image: zhengkaics/hs-s3-privisioner:v1.0.3
+        imagePullPolicy: Always
+      restartPolicy: Always

@@ -2,9 +2,11 @@ kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
   name: s3-buckets
-provisioner: aws-s3.io/bucket
+provisioner: hs-s3.io/bucket
 parameters:
-  region: us-west-1
+  region: region1
+  disableSSL: "true"
+  endpointUrl: s3-region1.cloudian.com
   secretName: s3-bucket-owner
   secretNamespace: s3-provisioner
 reclaimPolicy: Delete

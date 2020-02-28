@@ -47,6 +47,27 @@ func getRegion(sc *storageV1.StorageClass) string {
 	return sc.Parameters[scRegionKey]
 }
 
+func getEndpointUrl(sc *storageV1.StorageClass) string {
+	const scEndpointUrlKey = "endpointUrl"
+	return sc.Parameters[scEndpointUrlKey]
+}
+
+
+//TODO return error if boolean cannot been parse
+func getDisableSSL(sc *storageV1.StorageClass) (bool, error) {
+	const scDisableSSLKey = "disableSSL";
+	strDisableSSL := sc.Parameters[scDisableSSLKey];
+	if len(strDisableSSL) < 1 {
+		return false, nil
+	}
+	switch strDisableSSL {
+	case "1", "t", "T", "true", "TRUE", "True":
+		return true, nil
+	case "0", "f", "F", "false", "FALSE", "False":
+		return false, nil
+	}
+	return false, fmt.Errorf("disableSSL is %s should be true or false", strDisableSSL)
+}
 // Return the secret namespace and name from the passed storage class.
 func getSecretName(sc *storageV1.StorageClass) (string, string) {
 
@@ -56,6 +77,8 @@ func getSecretName(sc *storageV1.StorageClass) (string, string) {
 	)
 	return sc.Parameters[scSecretNSKey], sc.Parameters[scSecretNameKey]
 }
+
+
 
 // Get the secret and set the receiver to the accessKeyId and secretKey.
 func (p *awsS3Provisioner) credsFromSecret(c *kubernetes.Clientset, ns, name string) error {

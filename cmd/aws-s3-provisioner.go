@@ -50,9 +50,9 @@ const (
 	defaultRegion    = "us-west-1"
 	httpPort         = 80
 	httpsPort        = 443
-	provisionerName  = "aws-s3.io/bucket"
+	provisionerName  = "hs-s3.io/bucket"
 	regionInsert     = "<REGION>"
-	s3Hostname       = "s3-" + regionInsert + ".amazonaws.com"
+//	s3Hostname       = "s3-" + regionInsert + ".cloudian.com"
 	s3BucketArn      = "arn:aws:s3:::%s"
 	policyArn        = "arn:aws:iam::%s:policy/%s"
 	createBucketUser = false
@@ -66,6 +66,7 @@ const (
 var (
 	kubeconfig string
 	masterURL  string
+	s3Hostname = "s3-" + regionInsert + ".amazonaws.com"
 )
 
 type awsS3Provisioner struct {
@@ -110,6 +111,8 @@ func awsDefaultSession() (*session.Session, error) {
 func (p *awsS3Provisioner) rtnObjectBkt(bktName string) *v1alpha1.ObjectBucket {
 
 	host := strings.Replace(s3Hostname, regionInsert, p.region, 1)
+//	glog.Infof("cloudian| buckethost is  %s", host)
+//	glog.Infof("cloudian| awsS3Provisioner p region is  %s", p.region)
 	conn := &v1alpha1.Connection{
 		Endpoint: &v1alpha1.Endpoint{
 			BucketHost: host,
@@ -144,6 +147,7 @@ func (p *awsS3Provisioner) createBucket(bktName string) error {
 	bucketinput := &s3.CreateBucketInput{
 		Bucket: &bktName,
 	}
+	glog.Infof("The bucketName is %s", bktName)
 
 	_, err := p.s3svc.CreateBucket(bucketinput)
 	if err != nil {
@@ -203,9 +207,25 @@ func (p *awsS3Provisioner) awsSessionFromStorageClass(sc *storageV1.StorageClass
 	// use the OBC's SC to create our session, set receiver fields
 	glog.V(2).Infof("Creating AWS session using credentials from storage class %s's secret", sc.Name)
 	p.region = region
+//	endPointUrl := "s3-region1.cloudian.com"
+//	disableSSL := true
+	endPointUrl := getEndpointUrl(sc)
+	disableSSL,err := getDisableSSL(sc)
+	if len(endPointUrl)>0 {
+		s3Hostname = endPointUrl
+	}
+	glog.Infof("endpoint been load  %s, disableSSL been load %s", endPointUrl, disableSSL)
+	if err != nil {
+		glog.Errorf("get parameter  %s error happen", err)
+		return err
+	}
+	//glog.Infof("cloudian| buckethost is  %s", host)
 	p.session, err = session.NewSession(&aws.Config{
 		Region:      aws.String(region),
 		Credentials: credentials.NewStaticCredentials(p.bktOwnerAccessId, p.bktOwnerSecretKey, ""),
+		Endpoint: aws.String(endPointUrl),
+		DisableSSL: &disableSSL,
+
 	})
 
 	return err
@@ -498,7 +518,8 @@ func main() {
 
 	handleFlags()
 
-	glog.Infof("AWS S3 Provisioner - main")
+	glog.Infof("cloudian | AWS S3 Provisioner - main")
+	glog.Infof("cloudian | The version work for HyperStore")
 	glog.V(2).Infof("flags: kubeconfig=%q; masterURL=%q", kubeconfig, masterURL)
 
 	config, clientset := createConfigAndClientOrDie(masterURL, kubeconfig)

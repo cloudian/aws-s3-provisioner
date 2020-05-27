@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
       - name: hs-s3-provisioner
-        image: zhengkaics/hs-s3-privisioner:v1.0.3
+        image: quay.io/cloudian/hs-s3-provisioner:dev0.0.1
         imagePullPolicy: Always
       restartPolicy: Always

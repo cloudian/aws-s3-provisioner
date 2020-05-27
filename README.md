@@ -4,7 +4,7 @@
 
 1. Build the provisioner binary.
 ```
- # go build -a -o ./bin/aws-s3-provisioner  ./cmd/...
+ # GOOS=linux GOARCH=amd64 go build -a -o ./bin/aws-s3-provisioner  ./cmd/...
 ```
 
 2. Login to docker and quay.io.

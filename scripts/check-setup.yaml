@@ -1,0 +1,23 @@
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: check-setup
+spec:
+  generateBucketName: check-setup
+  storageClassName: hyperstore-temp-buckets
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: check-setup
+spec:
+  containers:
+  - name: check-setup
+    image: k8s.gcr.io/busybox
+    command: [ "/bin/sh", "-c", "env" ]
+    envFrom:
+    - configMapRef:
+        name: check-setup
+    - secretRef:
+        name: check-setup
+  restartPolicy: Never

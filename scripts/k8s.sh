@@ -52,7 +52,7 @@ EOF
 
 # Load the photo gallery image into the cluster to avoid downloading if we have it cached
 echo "Pre loading photo gallery app"
-image="quay.io/nberrington/photo-gallery:v1.0.0"
+image="quay.io/cloudian/photo-gallery:v1.0.0"
 
 if [ -z "$(docker images -q "$image")" ]; then
     docker pull "$image"

@@ -1,0 +1,57 @@
+# Deploys the photo gallery app to demonstrate object bucket claims
+
+# Use an ObjectBucketClaim to bind to the existing "photos" bucket
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: brownfield-photo-bucket
+spec:
+  storageClassName: hyperstore-photo-bucket
+
+# Deploy the photo gallery app, binding to the bucket we've claimed
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: brownfield-photo
+  labels:
+    app: brownfield-photo-app
+spec:
+  replicas: 1
+  selector:
+      matchLabels:
+        app: brownfield-photo-app
+  template:
+    metadata:
+      labels:
+        app: brownfield-photo-app
+    spec:
+      containers:
+      - name: brownfield-photo
+        image: quay.io/cloudian/photo-gallery:v1.0.0
+        env:
+        - name: OBJECT_STORAGE_S3_TYPE
+          value: "aws"
+        envFrom:
+        - configMapRef:
+            name: brownfield-photo-bucket
+        - secretRef:
+            name: brownfield-photo-bucket
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+
+# Expose the service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: brownfield-photo
+spec:
+  type: NodePort
+  selector:
+    app: brownfield-photo-app
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30008

@@ -1,3 +1,4 @@
+# Deploy the s3 provisioner
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -6,12 +7,13 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: aws-s3-provisioner-account
+  name: hs-s3-provisioner-account
+  namespace: s3-provisioner
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: aws-s3-provisioner-role
+  name: hs-s3-provisioner-role
 rules:
   - apiGroups:
       - ""
@@ -44,36 +46,35 @@ rules:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: aws-s3-provisioner-binding
+  name: hs-s3-provisioner-binding
 subjects:
   - kind: ServiceAccount
-    name: aws-s3-provisioner-account
+    name: hs-s3-provisioner-account
     namespace: s3-provisioner
 roleRef:
   kind: ClusterRole
-  name: aws-s3-provisioner-role
+  name: hs-s3-provisioner-role
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: aws-s3-provisioner-deployment
+  name: hs-s3-provisioner-deployment
   namespace: s3-provisioner
   labels:
-    app: aws-s3-provisioner
+    app: hs-s3-provisioner
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: aws-s3-provisioner
+      app: hs-s3-provisioner
   template:
     metadata:
       labels:
-        app: aws-s3-provisioner
+        app: hs-s3-provisioner
     spec:
-      serviceAccountName: aws-s3-provisioner-account
+      serviceAccountName: hs-s3-provisioner-account
       containers:
-      - name: aws-s3-provisioner
-        image: quay.io/screeley44/aws-s3-provisioner:v1.0.0
-        imagePullPolicy: Always
+      - name: hs-s3-provisioner
+        image: quay.io/cloudian/hs-s3-provisioner:dev0.0.2
       restartPolicy: Always

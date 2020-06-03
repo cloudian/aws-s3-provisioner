@@ -1,0 +1,29 @@
+{
+	"name": "AWS S3 provisioner",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "devenv",
+	// Use 'settings' to set *default* container specific settings.json values on container create. 
+	// You can edit these settings after create using File > Preferences > Settings > Remote.
+	"settings": {
+		"terminal.integrated.shell.linux": "/bin/bash",
+		"go.gopath": "/go",
+		"go.inferGopath": true,
+		"go.useLanguageServer": true,
+		"go.lintTool": "golangci-lint",
+		"go.formatTool": "goimports"
+	},
+	// Add the IDs of extensions you want installed when the container is created in the array below.
+	"extensions": [
+		"ms-vscode.go",
+		"timonwong.shellcheck",
+		"eamodio.gitlens",
+		"github.vscode-pull-request-github",
+		"ms-kubernetes-tools.vscode-kubernetes-tools"
+	],
+	"remoteUser": "builder",
+	"workspaceFolder": "/home/builder/aws-s3-provisioner",
+	"remoteEnv": {
+		"EDITOR": "code -r -w",
+	},
+	"postCreateCommand": "scripts/k8s.sh --restore"
+}

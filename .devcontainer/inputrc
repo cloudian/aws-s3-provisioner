@@ -1,0 +1,4 @@
+# Make history search (up and down arrow) take into account what you've
+# already typed.
+"\e[A": history-search-backward
+"\e[B": history-search-forward

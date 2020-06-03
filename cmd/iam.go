@@ -98,9 +98,7 @@ func (p *awsS3Provisioner) handleUserAndPolicyDeletion(bktName string) error {
 
 	// Detach Policy
 	_, err := p.iamsvc.DetachUserPolicy((&awsuser.DetachUserPolicyInput{PolicyArn: aws.String(arn), UserName: aws.String(uname)}))
-	if err != nil {
-		// Not sure we want to stop the deletion of the user or bucket at this point
-		// so just logging an error
+	if err != nil && !isNoSuchEntityError(err) {
 		glog.Errorf("Error detaching User Policy %s %v", arn, err)
 		return err
 	}
@@ -108,9 +106,7 @@ func (p *awsS3Provisioner) handleUserAndPolicyDeletion(bktName string) error {
 
 	// Delete Policy
 	_, err = p.iamsvc.DeletePolicy(&awsuser.DeletePolicyInput{PolicyArn: aws.String(arn)})
-	if err != nil {
-		// Not sure we want to stop the deletion of the user or bucket at this point
-		// so just logging an error
+	if err != nil && !isNoSuchEntityError(err) {
 		glog.Errorf("Error deleting User Policy %s %v", arn, err)
 		return err
 	}
@@ -121,9 +117,7 @@ func (p *awsS3Provisioner) handleUserAndPolicyDeletion(bktName string) error {
 	accessKeyId, _ := p.getAccessKey(uname)
 	if len(accessKeyId) != 0 {
 		_, err = p.iamsvc.DeleteAccessKey(&awsuser.DeleteAccessKeyInput{AccessKeyId: aws.String(accessKeyId), UserName: aws.String(uname)})
-		if err != nil {
-			// Not sure we want to stop the deletion of the user or bucket at this point
-			// so just logging an error
+		if err != nil && !isNoSuchEntityError(err) {
 			glog.Errorf("Error deleting access key for user %s %v", uname, err)
 			return err
 		}
@@ -133,9 +127,7 @@ func (p *awsS3Provisioner) handleUserAndPolicyDeletion(bktName string) error {
 	// Delete IAM User
 	glog.V(2).Infof("Deleting User %q", uname)
 	_, err = p.iamsvc.DeleteUser(&awsuser.DeleteUserInput{UserName: aws.String(uname)})
-	if err != nil {
-		// Not sure we want to stop the deletion of the user or bucket at this point
-		// so just logging an error
+	if err != nil && !isNoSuchEntityError(err) {
 		glog.Errorf("Error deleting User %s %v", uname, err)
 		return err
 	}

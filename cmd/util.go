@@ -22,6 +22,10 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/iam"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/golang/glog"
 	"github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
 	storageV1 "k8s.io/api/storage/v1"
@@ -142,4 +146,32 @@ func (p *awsS3Provisioner) createUserName(bkt string) string {
 	}
 	glog.V(2).Infof("Generated user %s after %v iterations", name, i)
 	return name
+}
+
+// isNoSuchBucketError tests the result of failed bucket deletion calls
+// to see if the failure was due to the bucket already having been deleted.
+// This can happen if the provisioner restarts during a Delete() operation.
+func isNoSuchBucketError(err error) bool {
+	// Handle NewBatchDeleteWithClient errors
+	if batchError, ok := err.(*s3manager.BatchError); ok {
+		if origErr, ok := batchError.Errors[0].OrigErr.(awserr.Error); ok {
+			code := origErr.Code()
+			return code == s3.ErrCodeNoSuchBucket
+		}
+	}
+	// Handle DeleteBucket errors
+	if origErr, ok := err.(awserr.Error); ok {
+		code := origErr.Code()
+		return code == s3.ErrCodeNoSuchBucket
+	}
+	return false
+}
+
+// isNoSuchBucketError tests the result of an IAM delete operation
+// to see if the failure was due to the entity already having been removed
+func isNoSuchEntityError(err error) bool {
+	if awsErr, ok := err.(awserr.Error); ok {
+		return awsErr.Code() == iam.ErrCodeNoSuchEntityException
+	}
+	return false
 }

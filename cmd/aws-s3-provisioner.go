@@ -451,11 +451,8 @@ func (p awsS3Provisioner) Delete(ob *v1alpha1.ObjectBucket) error {
 	// Delete IAM Policy and User
 	err = p.handleUserAndPolicyDeletion(p.bucketName)
 	if err != nil {
-		// We are currently only logging
-		// because if failure do not want to stop
-		// deletion of bucket
 		glog.Errorf("Failed to delete Policy and/or User - manual clean up required")
-		//return fmt.Errorf("Error deleting Policy and/or User %v", err)
+		return fmt.Errorf("Error deleting Policy and/or User %v", err)
 	}
 
 	// Delete Bucket
@@ -465,7 +462,7 @@ func (p awsS3Provisioner) Delete(ob *v1alpha1.ObjectBucket) error {
 
 	glog.V(2).Infof("Deleting all objects in bucket %q (from OB %q)", p.bucketName, ob.Name)
 	err = s3manager.NewBatchDeleteWithClient(p.s3svc).Delete(aws.BackgroundContext(), iter)
-	if err != nil {
+	if err != nil && !isNoSuchBucketError(err) {
 		return fmt.Errorf("Error deleting objects from bucket %q: %v", p.bucketName, err)
 	}
 
@@ -473,7 +470,7 @@ func (p awsS3Provisioner) Delete(ob *v1alpha1.ObjectBucket) error {
 	_, err = p.s3svc.DeleteBucket(&s3.DeleteBucketInput{
 		Bucket: aws.String(p.bucketName),
 	})
-	if err != nil {
+	if err != nil && !isNoSuchBucketError(err) {
 		return fmt.Errorf("Error deleting empty bucket %q: %v", p.bucketName, err)
 	}
 	glog.Infof("Deleted bucket %q from OB %q", p.bucketName, ob.Name)

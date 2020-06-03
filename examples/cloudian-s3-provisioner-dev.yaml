@@ -1,0 +1,5 @@
+# Setup for runnning operator outside kubernetes
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: s3-provisioner

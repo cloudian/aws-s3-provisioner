@@ -1,0 +1,58 @@
+# Deploys the photo gallery app to demonstrate grenfield object bucket claims
+
+# Use an ObjectBucketClaim to create a new bucket for this application
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: greenfield-photo-bucket
+spec:
+  generateBucketName: greenfield-photo-bucket
+  storageClassName: hyperstore-temp-buckets
+
+# Deploy the photo gallery app, binding to the bucket we've claimed
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greenfield-photo
+  labels:
+    app: greenfield-photo-app
+spec:
+  replicas: 1
+  selector:
+      matchLabels:
+        app: greenfield-photo-app
+  template:
+    metadata:
+      labels:
+        app: greenfield-photo-app
+    spec:
+      containers:
+      - name: greenfield-photo
+        image: quay.io/cloudian/photo-gallery:v1.0.0
+        env:
+        - name: OBJECT_STORAGE_S3_TYPE
+          value: "aws"
+        envFrom:
+        - configMapRef:
+            name: greenfield-photo-bucket
+        - secretRef:
+            name: greenfield-photo-bucket
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+
+# Expose the service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: greenfield-photo
+spec:
+  type: NodePort
+  selector:
+    app: greenfield-photo-app
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30007

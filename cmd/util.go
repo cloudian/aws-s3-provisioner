@@ -19,6 +19,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"net/url"
 	"time"
 
 	"github.com/golang/glog"
@@ -55,6 +56,39 @@ func getSecretName(sc *storageV1.StorageClass) (string, string) {
 		scSecretNSKey   = "secretNamespace"
 	)
 	return sc.Parameters[scSecretNSKey], sc.Parameters[scSecretNameKey]
+}
+
+// getApiURL returns the URL configured in a storage class for a given api, or nil if not present
+func getApiURL(sc *storageV1.StorageClass, apikey string) (u *url.URL, err error) {
+	if v, ok := sc.Parameters[apikey]; ok {
+		// Check it's a valid uri
+		if u, err = url.Parse(v); err != nil {
+			return
+		}
+		// Support just having an endpoint name, assume https if that's the case
+		if u.Scheme == "" {
+			if u, err = url.Parse("https://" + v); err != nil {
+				return
+			}
+		}
+		// We don't expect the URL to have a path
+		if u.Path != "" {
+			err = fmt.Errorf("Invalid API endpoint: key=%s, value=%s", apikey, v)
+		}
+	}
+	return
+}
+
+// getS3ApiUri returns the s3 uri configured in a storage class, or "" if not present
+func getS3ApiURL(sc *storageV1.StorageClass) (*url.URL, error) {
+	const scS3Endpoint = "s3Endpoint"
+	return getApiURL(sc, scS3Endpoint)
+}
+
+// getIAMApiUri returns the s3 uri configured in a storage class, or "" if not present
+func getIAMApiURL(sc *storageV1.StorageClass) (*url.URL, error) {
+	const scIAMEndpoint = "iamEndpoint"
+	return getApiURL(sc, scIAMEndpoint)
 }
 
 // Get the secret and set the receiver to the accessKeyId and secretKey.

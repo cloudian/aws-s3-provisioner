@@ -93,7 +93,7 @@ func (p *awsS3Provisioner) handleUserAndPolicyDeletion(bktName string) error {
 	glog.V(2).Infof("deleting user and policy for bucket %q", bktName)
 
 	uname := p.bktUserName
-	p.iamsvc = awsuser.New(p.session)
+	p.iamsvc = awsuser.New(p.iamSession)
 	arn := p.bktUserPolicyArn
 
 	// Detach Policy

@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/url"
 	_ "net/url"
 	"os"
 	"os/signal"
@@ -50,6 +51,7 @@ const (
 	defaultRegion   = "us-west-1"
 	httpPort        = 80
 	httpsPort       = 443
+	httpsScheme     = "https"
 	provisionerName = "aws-s3.io/bucket"
 	regionInsert    = "<REGION>"
 	s3Hostname      = "s3-" + regionInsert + ".amazonaws.com"
@@ -69,10 +71,14 @@ var (
 type awsS3Provisioner struct {
 	bucketName string
 	region     string
-	// session is the aws session
-	session *session.Session
+	// s3Endpoint is the url used to connect to the s3 server, or nil to use default
+	s3Endpoint *url.URL
+	// s3session is the aws session for s3 operations
+	s3Session *session.Session
 	// s3svc is the aws s3 service based on the session
 	s3svc *s3.S3
+	// iam3session is the aws session for IAM operations
+	iamSession *session.Session
 	// iam client service
 	iamsvc *awsuser.IAM
 	//kube client
@@ -107,11 +113,24 @@ func awsDefaultSession() (*session.Session, error) {
 // Return the OB struct with minimal fields filled in.
 func (p *awsS3Provisioner) rtnObjectBkt(bktName string) *v1alpha1.ObjectBucket {
 
-	host := strings.Replace(s3Hostname, regionInsert, p.region, 1)
+	var host string
+	var port int
+	if p.s3Endpoint != nil {
+		host = p.s3Endpoint.Host
+		if p.s3Endpoint.Scheme == httpsScheme {
+			port = httpsPort
+		} else {
+			port = httpPort
+		}
+	} else {
+		host = strings.Replace(s3Hostname, regionInsert, p.region, 1)
+		port = httpsPort
+	}
+
 	conn := &v1alpha1.Connection{
 		Endpoint: &v1alpha1.Endpoint{
 			BucketHost: host,
-			BucketPort: httpsPort,
+			BucketPort: port,
 			BucketName: bktName,
 			Region:     p.region,
 			AdditionalConfigData: map[string]string{
@@ -166,6 +185,18 @@ func (p *awsS3Provisioner) createBucket(bktName string) error {
 	return nil
 }
 
+// generates an aws.Config from a provision and service endpoint url
+func (p *awsS3Provisioner) awsConfig(endpoint *url.URL) *aws.Config {
+	cfg := &aws.Config{
+		Region:      aws.String(p.region),
+		Credentials: credentials.NewStaticCredentials(p.bktOwnerAccessId, p.bktOwnerSecretKey, ""),
+	}
+	if endpoint != nil {
+		cfg.Endpoint = aws.String(endpoint.String())
+	}
+	return cfg
+}
+
 // Create an aws session based on the OBC's storage class's secret and region.
 // Set in the receiver the session and region used to create the session.
 // Note: in error cases it's possible that the set region is different from
@@ -176,7 +207,8 @@ func (p *awsS3Provisioner) awsSessionFromStorageClass(sc *storageV1.StorageClass
 	var errDefault = func() error {
 		var err error
 		p.region = defaultRegion
-		p.session, err = awsDefaultSession()
+		p.s3Session, err = awsDefaultSession()
+		p.iamSession = p.s3Session
 		return err
 	}
 
@@ -198,13 +230,26 @@ func (p *awsS3Provisioner) awsSessionFromStorageClass(sc *storageV1.StorageClass
 		return errDefault()
 	}
 
-	// use the OBC's SC to create our session, set receiver fields
+	// get the s3 and iam endpoints
+	s3URL, err := getS3ApiURL(sc)
+	if err != nil {
+		glog.Errorf("Invalid S3 API URL in storage class %s: %v", sc.Name, err)
+		return err
+	}
+	iamURL, err := getIAMApiURL(sc)
+	if err != nil {
+		glog.Errorf("Invalid IAM API URL in storage class %s: %v", sc.Name, err)
+		return err
+	}
+
+	// use the OBC's SC to create our sessions, set receiver fields
 	glog.V(2).Infof("Creating AWS session using credentials from storage class %s's secret", sc.Name)
 	p.region = region
-	p.session, err = session.NewSession(&aws.Config{
-		Region:      aws.String(region),
-		Credentials: credentials.NewStaticCredentials(p.bktOwnerAccessId, p.bktOwnerSecretKey, ""),
-	})
+	p.s3Endpoint = s3URL
+	p.s3Session, err = session.NewSession(p.awsConfig(s3URL))
+	if err == nil {
+		p.iamSession, err = session.NewSession(p.awsConfig(iamURL))
+	}
 
 	return err
 }
@@ -219,7 +264,7 @@ func (p *awsS3Provisioner) setSessionAndService(sc *storageV1.StorageClass) erro
 	}
 
 	glog.V(2).Infof("Creating S3 service based on storageclass %q", sc.Name)
-	p.s3svc = s3.New(p.session)
+	p.s3svc = s3.New(p.s3Session)
 	if p.s3svc == nil {
 		return fmt.Errorf("error creating S3 service: %v", err)
 	}
@@ -262,7 +307,7 @@ func (p *awsS3Provisioner) initializeUserAndPolicy() error {
 
 	//Create IAM service (maybe this should be added into our default or obc session
 	//or create all services type of function?
-	p.iamsvc = awsuser.New(p.session)
+	p.iamsvc = awsuser.New(p.iamSession)
 
 	// TODO: default access and key are set to bkt owner.
 	//   This needs to be more restrictive or a failure...

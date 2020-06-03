@@ -94,8 +94,8 @@ func randomString(n int) string {
 
 func (p *awsS3Provisioner) createUserName(bkt string) string {
 	// prefix is bucket name
-	if len(bkt) > maxBucketLen  {
-		bkt = bkt[:(maxBucketLen-1)]
+	if len(bkt) > maxBucketLen {
+		bkt = bkt[:(maxBucketLen - 1)]
 	}
 
 	userbool := true

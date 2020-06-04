@@ -98,7 +98,7 @@ func (p *awsS3Provisioner) createUserName(bkt string) string {
 		bkt = bkt[:(maxBucketLen - 1)]
 	}
 
-	userbool := true
+	var userbool bool
 	name := ""
 	i := 0
 	for ok := true; ok; ok = userbool {

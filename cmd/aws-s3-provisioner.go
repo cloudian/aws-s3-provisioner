@@ -47,20 +47,18 @@ import (
 )
 
 const (
-	defaultRegion    = "us-west-1"
-	httpPort         = 80
-	httpsPort        = 443
-	provisionerName  = "aws-s3.io/bucket"
-	regionInsert     = "<REGION>"
-	s3Hostname       = "s3-" + regionInsert + ".amazonaws.com"
-	s3BucketArn      = "arn:aws:s3:::%s"
-	policyArn        = "arn:aws:iam::%s:policy/%s"
-	createBucketUser = false
-	obStateARN       = "ARN"
-	obStateUser      = "UserName"
-	maxBucketLen     = 58
-	maxUserLen       = 63
-	genUserLen       = 5
+	defaultRegion   = "us-west-1"
+	httpPort        = 80
+	httpsPort       = 443
+	provisionerName = "aws-s3.io/bucket"
+	regionInsert    = "<REGION>"
+	s3Hostname      = "s3-" + regionInsert + ".amazonaws.com"
+	s3BucketArn     = "arn:aws:s3:::%s"
+	policyArn       = "arn:aws:iam::%s:policy/%s"
+	obStateARN      = "ARN"
+	obStateUser     = "UserName"
+	maxBucketLen    = 58
+	genUserLen      = 5
 )
 
 var (
@@ -315,10 +313,7 @@ func (p *awsS3Provisioner) checkIfUserExists(name string) bool {
 
 	_, err := p.iamsvc.GetUser(input)
 	if err != nil {
-		if err.(awserr.Error).Code() == awsuser.ErrCodeEntityAlreadyExistsException {
-			return true
-		}
-		return false
+		return err.(awserr.Error).Code() == awsuser.ErrCodeEntityAlreadyExistsException
 	}
 
 	return false
@@ -517,7 +512,7 @@ func main() {
 		os.Exit(1)
 	}
 	glog.V(2).Infof("main: running %s provisioner...", provisionerName)
-	S3ProvisionerController.Run(stopCh)
+	_ = S3ProvisionerController.Run(stopCh)
 
 	<-stopCh
 	glog.Infof("main: %s provisioner exited.", provisionerName)
@@ -541,7 +536,7 @@ func handleSignals() <-chan struct{} {
 	sigCh := make(chan os.Signal)
 	stopCh := make(chan struct{})
 	go func() {
-		signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGKILL)
+		signal.Notify(sigCh, syscall.SIGTERM)
 		<-sigCh
 		close(stopCh)
 		os.Exit(1)

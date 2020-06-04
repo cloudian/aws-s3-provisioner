@@ -512,7 +512,10 @@ func main() {
 		os.Exit(1)
 	}
 	glog.V(2).Infof("main: running %s provisioner...", provisionerName)
-	_ = S3ProvisionerController.Run(stopCh)
+	err = S3ProvisionerController.Run(stopCh)
+	if err != nil {
+		glog.Errorf("AWS S3 provisioner, error running provisioner : %v", err)
+	}
 
 	<-stopCh
 	glog.Infof("main: %s provisioner exited.", provisionerName)

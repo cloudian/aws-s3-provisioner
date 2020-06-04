@@ -117,6 +117,7 @@ func (p *awsS3Provisioner) handleUserAndPolicyDeletion(bktName string) error {
 	glog.V(2).Infof("successfully deleted policy %q", arn)
 
 	// Delete AccessKeys
+	// TODO: error handling
 	accessKeyId, _ := p.getAccessKey(uname)
 	if len(accessKeyId) != 0 {
 		_, err = p.iamsvc.DeleteAccessKey(&awsuser.DeleteAccessKeyInput{AccessKeyId: aws.String(accessKeyId), UserName: aws.String(uname)})

@@ -84,14 +84,15 @@ type awsS3Provisioner struct {
 	//kube client
 	clientset *kubernetes.Clientset
 	// access keys for aws acct for the bucket *owner*
-	bktOwnerAccessId  string
-	bktOwnerSecretKey string
-	bktCreateUser     string
-	bktUserName       string
-	bktUserAccessId   string
-	bktUserSecretKey  string
-	bktUserAccountId  string
-	bktUserPolicyArn  string
+	bktOwnerAccessId   string
+	bktOwnerSecretKey  string
+	bktCreateUser      string
+	bktStoragePolicyId string
+	bktUserName        string
+	bktUserAccessId    string
+	bktUserSecretKey   string
+	bktUserAccountId   string
+	bktUserPolicyArn   string
 }
 
 func NewAwsS3Provisioner(cfg *restclient.Config, s3Provisioner awsS3Provisioner) (*libbkt.Provisioner, error) {
@@ -162,7 +163,11 @@ func (p *awsS3Provisioner) createBucket(bktName string) error {
 		Bucket: &bktName,
 	}
 
-	_, err := p.s3svc.CreateBucket(bucketinput)
+	req, _ := p.s3svc.CreateBucketRequest(bucketinput)
+	if p.bktStoragePolicyId != "" {
+		req.HTTPRequest.Header.Add("x-gmt-policyid", p.bktStoragePolicyId)
+	}
+	err := req.Send()
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
@@ -290,6 +295,12 @@ func (p *awsS3Provisioner) initializeCreateOrGrant(options *apibkt.BucketOptions
 
 	// check for bkt user access policy vs. bkt owner policy based on SC
 	p.setCreateBucketUserOptions(obc, sc)
+
+	// check if storage policy is defined
+	const scPolicy = "storagePolicyId"
+	if policy, ok := sc.Parameters[scPolicy]; ok {
+		p.bktStoragePolicyId = policy
+	}
 
 	// set the aws session and s3 service from the storage class
 	err = p.setSessionAndService(sc)

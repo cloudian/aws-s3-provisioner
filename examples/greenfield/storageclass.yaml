@@ -12,5 +12,7 @@ parameters:
   secretNamespace: s3-provisioner
   s3Endpoint: http://s3-reg-1.landemo1.cloudian.eu
   iamEndpoint: http://iam.landemo1.cloudian.eu:16080
+  # Set storagePolicyId to create buckets with specified policy
+  #storagePolicyId: <policy id>
 # Delete bucket when object bucket claim is deleted
 reclaimPolicy: Delete

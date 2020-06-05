@@ -74,6 +74,7 @@ parameters:
   secretNamespace: s3-provisioner
   s3Endpoint: <API server URL, e.g. http://s3-reg-1.landemo1.cloudian.eu>
   iamEndpoint: <IAM API server URL, e.g. http://iam.landemo1.cloudian.eu:16080>
+  storagePolicyId: <Storage Policy ID - or omit line to use default storage policy> 
 reclaimPolicy: Delete
 ```
 
@@ -81,8 +82,8 @@ This file needs some customisation, depending on your setup.
 
 1. Change metdata.name to a unique tag for this storage class.
 1. Change region, s3Endpoint and iamEndpoint to match your HyperStore setup
-1. For greenfield: delete bucketName
-1. For brownfield: specify an already created bucket name and delete reclaimPolicy
+1. For greenfield: delete bucketName and optionally set the storage policy to use for new buckets. Omit the storagePolicyId line to use the default policy. To find the policy ID, navigate to the Cluster->Storage Policies page on the CMC, select View/Edit for the policy, and copy the ID field (above the Policy Name field)
+1. For brownfield: specify an already created bucket name and delete reclaimPolicy and storagePolicyId
 
 Apply this with:
 ```bash

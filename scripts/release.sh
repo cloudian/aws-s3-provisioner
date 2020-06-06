@@ -8,7 +8,7 @@ if [ "$1" == "--push" ]; then
   shift
 fi
 
-tag=${1:-quay.io/cloudian/hs-s3-provisioner:dev0.0.2}
+tag=${1:-quay.io/cloudian/hs-s3-provisioner:dev0.0.3}
 
 docker build -t "$tag" .
 

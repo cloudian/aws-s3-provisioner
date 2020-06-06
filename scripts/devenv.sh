@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 if [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
   echo "Usage: $(basename "$1") [--rebuild] | [--destroy [--volumes]] | [command to run in dev container]"

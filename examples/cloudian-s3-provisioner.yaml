@@ -76,5 +76,5 @@ spec:
       serviceAccountName: hs-s3-provisioner-account
       containers:
       - name: hs-s3-provisioner
-        image: quay.io/cloudian/hs-s3-provisioner:dev0.0.3
+        image: quay.io/cloudian/hs-s3-provisioner:dev0.0.4
       restartPolicy: Always

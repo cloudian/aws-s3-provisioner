@@ -26,6 +26,7 @@ import (
 	awsuser "github.com/aws/aws-sdk-go/service/iam"
 	"github.com/golang/glog"
 	"github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
+	apibkt "github.com/kube-object-storage/lib-bucket-provisioner/pkg/provisioner/api"
 	storageV1 "k8s.io/api/storage/v1"
 )
 
@@ -40,11 +41,11 @@ type StatementEntry struct {
 	Sid      string
 	Effect   string
 	Action   []string
-	Resource []string
+	Resource []string `json:",omitempty"`
 }
 
 // handleUserAndPolicy takes care of policy and user creation when flag is set.
-func (p *awsS3Provisioner) handleUserAndPolicy(bktName string) (string, string, error) {
+func (p *awsS3Provisioner) handleUserAndPolicy(bktName string, options *apibkt.BucketOptions) (string, string, error) {
 
 	glog.V(2).Infof("creating user and policy for bucket %q", bktName)
 
@@ -60,7 +61,7 @@ func (p *awsS3Provisioner) handleUserAndPolicy(bktName string) (string, string, 
 	//if createBucket was successful
 	//might change the input param into this function, we need bucketName
 	//and maybe accessPerms (read, write, read/write)
-	policyDoc, err := p.createBucketPolicyDocument(bktName)
+	policyDoc, err := p.createBucketPolicyDocument(bktName, options)
 	if err != nil {
 		//We did get our user created, but not our policy doc
 		//I'm going to pass back our user for now
@@ -136,7 +137,7 @@ func (p *awsS3Provisioner) handleUserAndPolicyDeletion(bktName string) error {
 	return err
 }
 
-func (p *awsS3Provisioner) createBucketPolicyDocument(bktName string) (string, error) {
+func (p *awsS3Provisioner) createBucketPolicyDocument(bktName string, options *apibkt.BucketOptions) (string, error) {
 
 	arn := fmt.Sprintf(s3BucketArn, bktName)
 	p.bktUserPolicyArn = arn
@@ -215,27 +216,38 @@ func (p *awsS3Provisioner) createBucketPolicyDocument(bktName string) (string, e
 		Statement: []StatementEntry{},
 	}
 
-	// do a switch case here to figure out which policy to include
-	// for now we are commenting until we can update the lib
-	// this will come from bucketOptions I'm guessing (obc or sc params)?
-	/*
-		if spec.LocalPermission != nil {
-			switch *spec.LocalPermission {
-			case storageV1.ReadOnlyPermission:
-				policy.Statement = append(policy.Statement, read)
-			case storageV1.WriteOnlyPermission:
-				policy.Statement = append(policy.Statement, write)
-			case storageV1.ReadWritePermission:
-				policy.Statement = append(policy.Statement, read, write)
-			default:
-				return "", fmt.Errorf("unknown permission, %s", *spec.LocalPermission)
-			}
+	// Check if the storage class has provided a storage policy we should use...
+	if p, ok := options.Parameters["iamPolicy"]; ok {
+		err := json.Unmarshal([]byte(p), &policy)
+		if err != nil {
+			return "", err
 		}
-	*/
-	//For now hard coding read and write
-	policy.Statement = append(policy.Statement, read, write)
+		// Ensure each policy is tied to just this bucket
+		for idx, _ := range policy.Statement {
+			policy.Statement[idx].Resource = []string{arn + "/*", arn}
+		}
+	} else {
+		// do a switch case here to figure out which policy to include
+		// for now we are commenting until we can update the lib
+		// this will come from bucketOptions I'm guessing (obc or sc params)?
+		/*
+			if spec.LocalPermission != nil {
+				switch *spec.LocalPermission {
+				case storageV1.ReadOnlyPermission:
+					policy.Statement = append(policy.Statement, read)
+				case storageV1.WriteOnlyPermission:
+					policy.Statement = append(policy.Statement, write)
+				case storageV1.ReadWritePermission:
+					policy.Statement = append(policy.Statement, read, write)
+				default:
+					return "", fmt.Errorf("unknown permission, %s", *spec.LocalPermission)
+				}
+			}
+		*/
+		policy.Statement = append(policy.Statement, read, write)
+	}
 
-	b, err := json.Marshal(&policy)
+	b, err := json.MarshalIndent(&policy, "", "  ")
 	if err != nil {
 		return "", fmt.Errorf("error marshaling policy, %s", err.Error())
 	}

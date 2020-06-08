@@ -12,23 +12,8 @@ parameters:
   secretNamespace: s3-provisioner
   s3Endpoint: http://s3-reg-1.landemo1.cloudian.eu
   iamEndpoint: http://iam.landemo1.cloudian.eu:16080
-
   # Set storagePolicyId to create buckets with specified policy
   #storagePolicyId: <policy id>
-
-  # Provide an IAM policy document to override the default IAM policy
-  # of read+write access to the bucket.
-  # Omit the "Resource" field - it will be set to only allow access to the claimed bucket
-  # For example to set a bucket read-only, uncomment the following:
-  #iamPolicy: |
-  #  {
-  #    "Version": "2012-10-17",
-  #    "Statement": [{
-  #            "Sid": "AllowAll",
-  #            "Effect": "Allow",
-  #            "Action": ["s3:HeadObject", "s3:ListBucket", "s3:GetObject"]
-  #    }]
-  #  }
 
 # Delete bucket when object bucket claim is deleted
 reclaimPolicy: Delete

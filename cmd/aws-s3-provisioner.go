@@ -314,7 +314,7 @@ func (p *awsS3Provisioner) initializeCreateOrGrant(options *apibkt.BucketOptions
 // initializeUserAndPolicy sets commonly used provisioner
 // receiver fields, generates a unique username and calls
 // handleUserandPolicy.
-func (p *awsS3Provisioner) initializeUserAndPolicy() error {
+func (p *awsS3Provisioner) initializeUserAndPolicy(options *apibkt.BucketOptions) error {
 
 	//Create IAM service (maybe this should be added into our default or obc session
 	//or create all services type of function?
@@ -330,7 +330,7 @@ func (p *awsS3Provisioner) initializeUserAndPolicy() error {
 		p.bktUserName = p.createUserName(p.bucketName)
 
 		// handle all iam and policy operations
-		uAccess, uKey, err := p.handleUserAndPolicy(p.bucketName)
+		uAccess, uKey, err := p.handleUserAndPolicy(p.bucketName, options)
 		if err != nil || uAccess == "" || uKey == "" {
 			//what to do - something failed along the way
 			//do we fall back and create our connection with
@@ -404,7 +404,7 @@ func (p awsS3Provisioner) Provision(options *apibkt.BucketOptions) (*v1alpha1.Ob
 	// Bucket does exist, attach new user and policy wrapper
 	// calling initializeCreateOrGrant
 	// TODO: we currently are catching an error that is always nil
-	_ = p.initializeUserAndPolicy()
+	_ = p.initializeUserAndPolicy(options)
 
 	// returned ob with connection info
 	return p.rtnObjectBkt(p.bucketName), nil
@@ -429,7 +429,7 @@ func (p awsS3Provisioner) Grant(options *apibkt.BucketOptions) (*v1alpha1.Object
 	// Bucket does exist, attach new user and policy wrapper
 	// calling initializeUserAndPolicy
 	// TODO: we currently are catching an error that is always nil
-	_ = p.initializeUserAndPolicy()
+	_ = p.initializeUserAndPolicy(options)
 
 	// returned ob with connection info
 	// TODO: assuming this is the same Green vs Brown?

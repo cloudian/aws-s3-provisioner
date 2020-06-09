@@ -91,6 +91,10 @@ func (p *awsS3Provisioner) handleUserAndPolicy(bktName string, options *apibkt.B
 
 func (p *awsS3Provisioner) handleUserAndPolicyDeletion(bktName string) error {
 
+	if p.bktCreateUser != "yes" {
+		return nil
+	}
+
 	glog.V(2).Infof("deleting user and policy for bucket %q", bktName)
 
 	uname := p.bktUserName
@@ -223,7 +227,7 @@ func (p *awsS3Provisioner) createBucketPolicyDocument(bktName string, options *a
 			return "", err
 		}
 		// Ensure each policy is tied to just this bucket
-		for idx, _ := range policy.Statement {
+		for idx := range policy.Statement {
 			policy.Statement[idx].Resource = []string{arn + "/*", arn}
 		}
 	} else {

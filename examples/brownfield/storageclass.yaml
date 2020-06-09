@@ -1,6 +1,6 @@
-# An object bucket provider that binds bucket claims to an 
+# An object bucket provider that binds bucket claims to an
 # existing (brownfield) bucket called "photos"
-# for every object bucket claim, and deletes the bucket 
+# for every object bucket claim, and deletes the bucket
 # when the object bucket claim is deleted
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
@@ -15,6 +15,12 @@ parameters:
   iamEndpoint: http://iam.landemo1.cloudian.eu:16080
   bucketName: photos # the existing bucket claims will attach to
 
+  # Specify a fixed set of credentials to use for all bucket claims
+  # instead of creating an IAM user per claim
+  #createBucketUser: "no"
+  #bucketClaimUserSecretName: s3-bucket-claim-user
+  #bucketClaimUserSecretNamespace: s3-provisioner
+  #
   # Provide an IAM policy document to override the default IAM policy
   # of read+write access to the bucket.
   # Omit the "Resource" field - it will be set to only allow access to the claimed bucket

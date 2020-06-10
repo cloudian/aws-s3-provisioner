@@ -44,17 +44,46 @@ type StatementEntry struct {
 }
 
 // handleUserAndPolicy takes care of policy and user creation when flag is set.
-func (p *awsS3Provisioner) handleUserAndPolicy(bktName string, options *apibkt.BucketOptions) (string, string, error) {
+func (p *awsS3Provisioner) handleUserAndPolicy(bktName string, options *apibkt.BucketOptions) (userAccessId, userSecretKey string, err error) {
 
 	glog.V(2).Infof("creating user and policy for bucket %q", bktName)
 
-	userAccessId, userSecretKey, err := p.createIAMUser("")
+	// Create the user
 	uname := p.bktUserName
+	_, err = p.iamsvc.CreateUser(&awsuser.CreateUserInput{
+		UserName: &uname,
+	})
 	if err != nil {
 		//should we fail here or keep going?
 		glog.Errorf("error creating IAM user %q: %v", uname, err)
-		return "", "", err
+		return
 	}
+	// If something goes wrong after this point delete the IAM user
+	defer func() {
+		if err != nil {
+			_, delerr := p.iamsvc.DeleteUser(&awsuser.DeleteUserInput{UserName: &uname})
+			if delerr != nil {
+				glog.Errorf("Failed to undo creating IAM user %s: %v", uname, err)
+			}
+		}
+	}()
+
+	// Create an access key
+	userAccessId, userSecretKey, err = p.createAccessKey(uname)
+	if err != nil {
+		//should we fail here or keep going?
+		glog.Errorf("error creating IAM user %q: %v", uname, err)
+		return
+	}
+	// If something goes wrong after this point delete the IAM user
+	defer func() {
+		if err != nil {
+			_, delerr := p.iamsvc.DeleteAccessKey(&awsuser.DeleteAccessKeyInput{UserName: &uname, AccessKeyId: &userAccessId})
+			if delerr != nil {
+				glog.Errorf("Failed to undo creating IAM user %s: %v", uname, err)
+			}
+		}
+	}()
 
 	//Create the Policy for the user + bucket
 	//if createBucket was successful
@@ -65,7 +94,7 @@ func (p *awsS3Provisioner) handleUserAndPolicy(bktName string, options *apibkt.B
 		//We did get our user created, but not our policy doc
 		//I'm going to pass back our user for now
 		glog.Errorf("error creating policyDoc %s: %v", bktName, err)
-		return userAccessId, userSecretKey, err
+		return
 	}
 
 	// Create the policy in aws for the user and bucket
@@ -74,18 +103,27 @@ func (p *awsS3Provisioner) handleUserAndPolicy(bktName string, options *apibkt.B
 	if err != nil {
 		//should we fail here or keep going?
 		glog.Errorf("error creating userPolicy for user %q on bucket %q: %v", uname, bktName, err)
-		return userAccessId, userSecretKey, err
+		return
 	}
+	// If something goes wrong after this point then delete policy document
+	defer func() {
+		if err != nil {
+			_, delerr := p.iamsvc.DeletePolicy(&awsuser.DeletePolicyInput{PolicyArn: aws.String(uname)})
+			if delerr != nil {
+				glog.Errorf("Failed to undo creating IAM policy %s: %v", uname, err)
+			}
+		}
+	}()
 
 	//attach policy to user - policyName and username are same
 	err = p.attachPolicyToUser(uname)
 	if err != nil {
 		glog.Errorf("error attaching userPolicy for user %q on bucket %q: %v", uname, bktName, err)
-		return userAccessId, userSecretKey, err
+		return
 	}
 
 	glog.V(2).Infof("successfully created user and policy for bucket %q", bktName)
-	return userAccessId, userSecretKey, nil
+	return
 }
 
 func (p *awsS3Provisioner) handleUserAndPolicyDeletion(bktName string) error {
@@ -330,6 +368,22 @@ func (p *awsS3Provisioner) getAccountID() (string, error) {
 	return aws.StringValue(&arnData.AccountID), nil
 }
 
+func (p *awsS3Provisioner) createAccessKey(user string) (string, string, error) {
+	// create the Access Keys for the new user
+	aresult, err := p.iamsvc.CreateAccessKey(&awsuser.CreateAccessKeyInput{
+		UserName: &user,
+	})
+	if err != nil {
+		return "", "", err
+	}
+
+	// populate our receiver
+	acccessId := aws.StringValue(aresult.AccessKey.AccessKeyId)
+	secretKey := aws.StringValue(aresult.AccessKey.SecretAccessKey)
+
+	return acccessId, secretKey, nil
+}
+
 // getAccessKeyId - Gets the accountID of the authenticated session.
 func (p *awsS3Provisioner) getAccessKey(username string) (string, error) {
 
@@ -346,43 +400,6 @@ func (p *awsS3Provisioner) getAccessKey(username string) (string, error) {
 
 	glog.V(2).Infof("no access key found for user %q", username)
 	return "", nil
-}
-
-// Create dyanamic IAM user, pass back accessKeys and set user name in receiver.
-// The user name is set to 1) passed-in user string, 2) receiver's user name
-// field, 3) bucket name.
-func (p *awsS3Provisioner) createIAMUser(user string) (string, string, error) {
-
-	myuser := user
-	if len(myuser) == 0 {
-		myuser = p.bktUserName
-	}
-	glog.V(2).Infof("creating IAM user %q", myuser)
-
-	//Create the new user
-	_, err := p.iamsvc.CreateUser(&awsuser.CreateUserInput{
-		UserName: &myuser,
-	})
-	if err != nil {
-		glog.Errorf("error creating user %v", err)
-		return "", "", err
-	}
-
-	// create the Access Keys for the new user
-	aresult, err := p.iamsvc.CreateAccessKey(&awsuser.CreateAccessKeyInput{
-		UserName: &myuser,
-	})
-	if err != nil {
-		glog.Errorf("error creating accessKey %v", err)
-		return "", "", err
-	}
-
-	// populate our receiver
-	p.bktUserAccessId = aws.StringValue(aresult.AccessKey.AccessKeyId)
-	p.bktUserSecretKey = aws.StringValue(aresult.AccessKey.SecretAccessKey)
-
-	glog.V(2).Infof("successfully created IAM user %q with access keys", myuser)
-	return p.bktUserAccessId, p.bktUserSecretKey, nil
 }
 
 // check storage class params for createBucketUser and set

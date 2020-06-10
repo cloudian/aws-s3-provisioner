@@ -408,6 +408,17 @@ func (p awsS3Provisioner) Provision(options *apibkt.BucketOptions) (*v1alpha1.Ob
 		glog.Errorf(err.Error())
 		return nil, err
 	}
+	// If we have a failure in the remainder of the provisioning, delete this bucket
+	defer func() {
+		if err != nil {
+			_, delerr := p.s3svc.DeleteBucket(&s3.DeleteBucketInput{
+				Bucket: aws.String(p.bucketName),
+			})
+			if delerr != nil {
+				glog.Errorf("Error undoing bucket creation %s: %v", p.bucketName, delerr)
+			}
+		}
+	}()
 
 	// createBucket was successful, deal with user and policy
 	// Bucket does exist, attach new user and policy wrapper

@@ -296,7 +296,7 @@ func (p *awsS3Provisioner) initializeCreateOrGrant(options *apibkt.BucketOptions
 	}
 
 	// check for bkt user access policy vs. bkt owner policy based on SC
-	p.setCreateBucketUserOptions(obc, sc)
+	p.setCreateBucketUserOptions(sc)
 
 	// check if storage policy is defined
 	const scPolicy = "storagePolicyId"
@@ -443,7 +443,12 @@ func (p awsS3Provisioner) Grant(options *apibkt.BucketOptions) (*v1alpha1.Object
 	// Bucket does exist, attach new user and policy wrapper
 	// calling initializeUserAndPolicy
 	// TODO: we currently are catching an error that is always nil
-	_ = p.initializeUserAndPolicy(options)
+	err = p.initializeUserAndPolicy(options)
+	if err != nil {
+		err = fmt.Errorf("error creating user for bucket %q: %v", p.bucketName, err)
+		glog.Errorf(err.Error())
+		return nil, err
+	}
 
 	// returned ob with connection info
 	// TODO: assuming this is the same Green vs Brown?
@@ -505,8 +510,6 @@ func (p awsS3Provisioner) Delete(ob *v1alpha1.ObjectBucket) error {
 
 // Revoke removes a user, policy and access keys from an existing bucket.
 func (p awsS3Provisioner) Revoke(ob *v1alpha1.ObjectBucket) error {
-	//TODO: need to make sure we are deleting correct user
-
 	// set receiver fields from OB data
 	p.bucketName = ob.Spec.Endpoint.BucketName
 	p.bktUserPolicyArn = ob.Spec.AdditionalState[obStateARN]
@@ -525,6 +528,8 @@ func (p awsS3Provisioner) Revoke(ob *v1alpha1.ObjectBucket) error {
 	if err != nil {
 		return fmt.Errorf("error using OB %q: %v", ob.Name, err)
 	}
+
+	p.setCreateBucketUserOptions(sc)
 
 	// Delete IAM Policy and User
 	err = p.handleUserAndPolicyDeletion(p.bucketName)

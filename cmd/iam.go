@@ -25,7 +25,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/arn"
 	awsuser "github.com/aws/aws-sdk-go/service/iam"
 	"github.com/golang/glog"
-	"github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
 	apibkt "github.com/kube-object-storage/lib-bucket-provisioner/pkg/provisioner/api"
 	storageV1 "k8s.io/api/storage/v1"
 )
@@ -386,9 +385,9 @@ func (p *awsS3Provisioner) createIAMUser(user string) (string, string, error) {
 	return p.bktUserAccessId, p.bktUserSecretKey, nil
 }
 
-// Get StorageClass from OBC and check params for createBucketUser and set
+// check storage class params for createBucketUser and set
 // provisioner receiver field.
-func (p *awsS3Provisioner) setCreateBucketUserOptions(obc *v1alpha1.ObjectBucketClaim, sc *storageV1.StorageClass) {
+func (p *awsS3Provisioner) setCreateBucketUserOptions(sc *storageV1.StorageClass) {
 
 	const scBucketUser = "createBucketUser"
 

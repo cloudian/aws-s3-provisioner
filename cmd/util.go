@@ -96,26 +96,23 @@ func getIAMApiURL(sc *storageV1.StorageClass) (*url.URL, error) {
 }
 
 // Get the secret and set the receiver to the accessKeyId and secretKey.
-func (p *awsS3Provisioner) credsFromSecret(c *kubernetes.Clientset, ns, name string) error {
+func credsFromSecret(c *kubernetes.Clientset, ns, name string) (accessKeyId, secretKey string, err error) {
 
 	nsName := fmt.Sprintf("%s/%s", ns, name)
 	glog.V(2).Infof("getting secret %q...", nsName)
 	secret, err := c.CoreV1().Secrets(ns).Get(name, metav1.GetOptions{})
 	if err != nil {
 		// TODO: some kind of exponential backoff and retry...
-		return fmt.Errorf("unable to get Secret %q: %v", nsName, err)
+		return
 	}
 
-	accessKeyId := string(secret.Data[v1alpha1.AwsKeyField])
-	secretKey := string(secret.Data[v1alpha1.AwsSecretField])
+	accessKeyId = string(secret.Data[v1alpha1.AwsKeyField])
+	secretKey = string(secret.Data[v1alpha1.AwsSecretField])
 	if accessKeyId == "" || secretKey == "" {
-		return fmt.Errorf("accessId and/or secretKey are blank in secret \"%s/%s\"", secret.Namespace, secret.Name)
+		err = fmt.Errorf("accessId and/or secretKey are blank in secret \"%s/%s\"", secret.Namespace, secret.Name)
 	}
 
-	// set receiver fields
-	p.bktOwnerAccessId = accessKeyId
-	p.bktOwnerSecretKey = secretKey
-	return nil
+	return
 }
 
 func randomString(n int) string {

@@ -75,7 +75,11 @@ parameters:
   s3Endpoint: <API server URL, e.g. http://s3-reg-1.landemo1.cloudian.eu>
   iamEndpoint: <IAM API server URL, e.g. http://iam.landemo1.cloudian.eu:16080>
   storagePolicyId: <Storage Policy ID - or omit line to use default storage policy> - greenfield only
-  iamPolicy: <IAM policy document (JSON string) for users of this bucket - omit to use default IAM policy (read+write bucket)>
+  createBucketUser: <optional - control whether the provisioner creates IAM users. Either "yes" or "no", default is "yes">
+  bucketClaimUserSecretName: <optional - a separate secret holding credentials to provide to object bucket claim if user creation is disabled>
+  bucketClaimUserSecretNamespace: <namespace for bucketClaimUserSecretName, required if bucketClaimUserSecretName is set>
+  iamPolicy: <IAM policy document (JSON string) for users of this bucket - omit to use default IAM policy (read+write bucket). Only applies if IAM user creation enabled>
+
 reclaimPolicy: Delete
 ```
 
@@ -85,7 +89,8 @@ This file needs some customisation, depending on your setup.
 1. Change region, s3Endpoint and iamEndpoint to match your HyperStore setup
 1. For greenfield: delete bucketName and optionally set the storage policy to use for new buckets. Omit the storagePolicyId line to use the default policy. To find the policy ID, navigate to the Cluster->Storage Policies page on the CMC, select View/Edit for the policy, and copy the ID field (above the Policy Name field)
 1. For brownfield: specify an already created bucket name and delete reclaimPolicy and storagePolicyId
-1. Optionally specify an iam policy document to override default read+write access to the bucket. You do not need to specify `Resource` fields - they will be set to only allow access to the claimed bucket. For example, to grant read-only access to the bucket:
+1. Optionally disable IAM user creation for bucket access by setting `createBucketUser` to `"no"`. A separate secret can be used to hold a shared credentials granted to all object bucket claims for this storage class by setting `bucketClaimUserSecretName` and `bucketClaimUserSecretNamespace`. If this secret is unset, the credentials from the `secretNamespace/secretName` are provided to object bucket claims. 
+1. Optionally specify an IAM policy document to override default read+write access to the bucket. You do not need to specify `Resource` fields - they will be set to only allow access to the provisioned bucket. Only applicable if IAM user creation is enabled. For example, to grant read-only access to the bucket:
 ```yaml
   iamPolicy: |
     {

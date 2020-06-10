@@ -229,11 +229,13 @@ func (p *awsS3Provisioner) awsSessionFromStorageClass(sc *storageV1.StorageClass
 	}
 
 	// get the sc's bucket owner secret
-	err := p.credsFromSecret(p.clientset, secretNS, secretName)
+	accessKeyId, secretKey, err := credsFromSecret(p.clientset, secretNS, secretName)
 	if err != nil {
 		glog.Warningf("secret \"%s/%s\" in storage class %q for %q is empty.\nUsing default credentials.", secretNS, secretName, sc.Name, p.bucketName)
 		return errDefault()
 	}
+	p.bktOwnerAccessId = accessKeyId
+	p.bktOwnerSecretKey = secretKey
 
 	// get the s3 and iam endpoints
 	s3URL, err := getS3ApiURL(sc)
@@ -294,7 +296,7 @@ func (p *awsS3Provisioner) initializeCreateOrGrant(options *apibkt.BucketOptions
 	}
 
 	// check for bkt user access policy vs. bkt owner policy based on SC
-	p.setCreateBucketUserOptions(obc, sc)
+	p.setCreateBucketUserOptions(sc)
 
 	// check if storage policy is defined
 	const scPolicy = "storagePolicyId"
@@ -316,32 +318,39 @@ func (p *awsS3Provisioner) initializeCreateOrGrant(options *apibkt.BucketOptions
 // handleUserandPolicy.
 func (p *awsS3Provisioner) initializeUserAndPolicy(options *apibkt.BucketOptions) error {
 
-	//Create IAM service (maybe this should be added into our default or obc session
-	//or create all services type of function?
-	p.iamsvc = awsuser.New(p.iamSession)
+	scName := options.ObjectBucketClaim.Spec.StorageClassName
+	var err error
+	var uAccess, uKey string
 
-	// TODO: default access and key are set to bkt owner.
-	//   This needs to be more restrictive or a failure...
-	p.bktUserAccessId = p.bktOwnerAccessId
-	p.bktUserSecretKey = p.bktOwnerSecretKey
 	if p.bktCreateUser == "yes" {
+		//Create IAM service (maybe this should be added into our default or obc session
+		//or create all services type of function?
+		p.iamsvc = awsuser.New(p.iamSession)
+
 		// Create a new IAM user using the name of the bucket and set
 		// access and attach policy for bucket and user
 		p.bktUserName = p.createUserName(p.bucketName)
 
 		// handle all iam and policy operations
-		uAccess, uKey, err := p.handleUserAndPolicy(p.bucketName, options)
-		if err != nil || uAccess == "" || uKey == "" {
-			//what to do - something failed along the way
-			//do we fall back and create our connection with
-			//the default bktOwnerRef?
-			glog.Errorf("Something failed along the way for handling Users and Policy: %v", err)
-		} else {
-			p.bktUserAccessId = uAccess
-			p.bktUserSecretKey = uKey
+		uAccess, uKey, err = p.handleUserAndPolicy(p.bucketName, options)
+	} else if uSecretName, ok := options.Parameters["bucketClaimUserSecretName"]; ok {
+		// Extract the bucket user secret
+		uSecretNS := options.Parameters["bucketClaimUserSecretNamespace"]
+		// get the sc's bucket owner secret
+		uAccess, uKey, err = credsFromSecret(p.clientset, uSecretNS, uSecretName)
+		if err != nil {
+			glog.Errorf("secret \"%s/%s\" in storage class %s for %q is invalid: %v", uSecretNS, uSecretName, scName, p.bucketName, err)
 		}
+	} else {
+		// Default to using the bucket owner creds
+		uAccess = p.bktOwnerAccessId
+		uKey = p.bktOwnerSecretKey
 	}
-	return nil
+	if err == nil {
+		p.bktUserAccessId = uAccess
+		p.bktUserSecretKey = uKey
+	}
+	return err
 }
 
 func (p *awsS3Provisioner) checkIfBucketExists(name string) bool {
@@ -404,7 +413,12 @@ func (p awsS3Provisioner) Provision(options *apibkt.BucketOptions) (*v1alpha1.Ob
 	// Bucket does exist, attach new user and policy wrapper
 	// calling initializeCreateOrGrant
 	// TODO: we currently are catching an error that is always nil
-	_ = p.initializeUserAndPolicy(options)
+	err = p.initializeUserAndPolicy(options)
+	if err != nil {
+		err = fmt.Errorf("error creating user for bucket %q: %v", p.bucketName, err)
+		glog.Errorf(err.Error())
+		return nil, err
+	}
 
 	// returned ob with connection info
 	return p.rtnObjectBkt(p.bucketName), nil
@@ -429,7 +443,12 @@ func (p awsS3Provisioner) Grant(options *apibkt.BucketOptions) (*v1alpha1.Object
 	// Bucket does exist, attach new user and policy wrapper
 	// calling initializeUserAndPolicy
 	// TODO: we currently are catching an error that is always nil
-	_ = p.initializeUserAndPolicy(options)
+	err = p.initializeUserAndPolicy(options)
+	if err != nil {
+		err = fmt.Errorf("error creating user for bucket %q: %v", p.bucketName, err)
+		glog.Errorf(err.Error())
+		return nil, err
+	}
 
 	// returned ob with connection info
 	// TODO: assuming this is the same Green vs Brown?
@@ -491,8 +510,6 @@ func (p awsS3Provisioner) Delete(ob *v1alpha1.ObjectBucket) error {
 
 // Revoke removes a user, policy and access keys from an existing bucket.
 func (p awsS3Provisioner) Revoke(ob *v1alpha1.ObjectBucket) error {
-	//TODO: need to make sure we are deleting correct user
-
 	// set receiver fields from OB data
 	p.bucketName = ob.Spec.Endpoint.BucketName
 	p.bktUserPolicyArn = ob.Spec.AdditionalState[obStateARN]
@@ -511,6 +528,8 @@ func (p awsS3Provisioner) Revoke(ob *v1alpha1.ObjectBucket) error {
 	if err != nil {
 		return fmt.Errorf("error using OB %q: %v", ob.Name, err)
 	}
+
+	p.setCreateBucketUserOptions(sc)
 
 	// Delete IAM Policy and User
 	err = p.handleUserAndPolicyDeletion(p.bucketName)

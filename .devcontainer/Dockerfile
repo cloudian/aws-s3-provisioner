@@ -80,6 +80,17 @@ RUN apt-get update \
     && apt-get install -y sudo \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \
+    # Create bind mount points and ensure they're owned by $USERNAME
+    && bash -c 'mkdir -p /home/$USERNAME/{.aws,.docker,.kube,.ssh} && chown $USERNAME:$USERNAME /home/$USERNAME/{.aws,.docker,.kube,.ssh}' \
+    # Add bash completions 
+    && echo "source <(kubectl completion bash)" >> /home/$USERNAME/.bashrc \
+    && echo "source <(kind completion bash)" >> /home/$USERNAME/.bashrc \
+    # Add our scripts to the path
+    && echo "PATH=\$PATH:\$HOME/aws-s3-provisioner/scripts" >> /home/$USERNAME/.bashrc \
+    #
+    # Ensure dependencies for vs live share extension are setup
+    # For some reason live share doesn't install unless we do this step, despite $USERNAME being in sudo
+    && wget -O ~/vsls-reqs https://aka.ms/vsls-linux-prereq-script && chmod +x ~/vsls-reqs && ~/vsls-reqs && rm ~/vsls-reqs \
     #
     # Clean up
     && apt-get autoremove -y \
@@ -88,10 +99,6 @@ RUN apt-get update \
 
 USER builder
 COPY inputrc /home/builder/.inputrc
-RUN bash -c "mkdir -p ~/{.aws,.docker,.kube,.ssh}"
-RUN echo "source <(kubectl completion bash)" >> ~/.bashrc
-RUN echo "source <(kind completion bash)" >> ~/.bashrc
-RUN echo "PATH=\$PATH:\$HOME/aws-s3-provisioner/scripts" >> ~/.bashrc
 
 # vscode likes containers to start off as root
 USER root

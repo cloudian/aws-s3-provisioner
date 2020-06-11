@@ -18,7 +18,8 @@
 		"timonwong.shellcheck",
 		"eamodio.gitlens",
 		"github.vscode-pull-request-github",
-		"ms-kubernetes-tools.vscode-kubernetes-tools"
+		"ms-kubernetes-tools.vscode-kubernetes-tools",
+		"ms-vsliveshare.vsliveshare"
 	],
 	"remoteUser": "builder",
 	"workspaceFolder": "/home/builder/aws-s3-provisioner",

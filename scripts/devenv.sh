@@ -17,6 +17,8 @@ COMPOSE_FILE="$(dirname "$(realpath "$0")")/../.devcontainer/docker-compose.yml"
 source "$(dirname "$COMPOSE_FILE")/.env"
 export COMPOSE_PROJECT_NAME
 export COMPOSE_FILE
+export BUILD_USER=$(id -u)
+export BUILD_GROUP=$(id -g)
 DEV_CONTAINER="${COMPOSE_PROJECT_NAME}_devenv_1"
 DEV_EXEC="docker exec -it --user builder --workdir /home/builder/aws-s3-provisioner $DEV_CONTAINER"
 

@@ -490,6 +490,7 @@ func (p awsS3Provisioner) Delete(ob *v1alpha1.ObjectBucket) error {
 	}
 
 	// Delete IAM Policy and User
+	p.setCreateBucketUserOptions(sc)
 	err = p.handleUserAndPolicyDeletion(p.bucketName)
 	if err != nil {
 		glog.Errorf("Failed to delete Policy and/or User - manual clean up required")
@@ -540,9 +541,8 @@ func (p awsS3Provisioner) Revoke(ob *v1alpha1.ObjectBucket) error {
 		return fmt.Errorf("error using OB %q: %v", ob.Name, err)
 	}
 
-	p.setCreateBucketUserOptions(sc)
-
 	// Delete IAM Policy and User
+	p.setCreateBucketUserOptions(sc)
 	err = p.handleUserAndPolicyDeletion(p.bucketName)
 	if err != nil {
 		// We are currently only logging

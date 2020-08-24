@@ -1,4 +1,4 @@
-module github.com/yard-turkey/aws-s3-provisioner
+module github.com/cloudian/cloudian-s3-operator
 
 go 1.14
 

@@ -2,18 +2,18 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: s3-provisioner
+  name: cloudian-s3-operator
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: hs-s3-provisioner-account
-  namespace: s3-provisioner
+  name: cloudian-s3-operator-account
+  namespace: cloudian-s3-operator
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: hs-s3-provisioner-role
+  name: cloudian-s3-operator-role
 rules:
   - apiGroups:
       - ""
@@ -46,35 +46,35 @@ rules:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: hs-s3-provisioner-binding
+  name: cloudian-s3-operator-binding
 subjects:
   - kind: ServiceAccount
-    name: hs-s3-provisioner-account
-    namespace: s3-provisioner
+    name: cloudian-s3-operator-account
+    namespace: cloudian-s3-operator
 roleRef:
   kind: ClusterRole
-  name: hs-s3-provisioner-role
+  name: cloudian-s3-operator-role
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hs-s3-provisioner-deployment
-  namespace: s3-provisioner
+  name: cloudian-s3-operator-deployment
+  namespace: cloudian-s3-operator
   labels:
-    app: hs-s3-provisioner
+    app: cloudian-s3-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: hs-s3-provisioner
+      app: cloudian-s3-operator
   template:
     metadata:
       labels:
-        app: hs-s3-provisioner
+        app: cloudian-s3-operator
     spec:
-      serviceAccountName: hs-s3-provisioner-account
+      serviceAccountName: cloudian-s3-operator-account
       containers:
-        - name: hs-s3-provisioner
-          image: quay.io/cloudian/hs-s3-provisioner:dev0.0.6
+        - name: cloudian-s3-operator
+          image: quay.io/cloudian/cloudian-s3-operator:dev0.0.7
       restartPolicy: Always

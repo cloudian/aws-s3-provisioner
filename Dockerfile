@@ -9,13 +9,13 @@ COPY cmd/ /app/cmd/
 
 # Build
 WORKDIR /app
-RUN go build -a -o aws-s3-provisioner ./cmd
+RUN go build -a -o cloudian-s3-operator ./cmd
 
 
 # Final stage - distribution image
 FROM alpine:3.11
 
-COPY --from=build /app/aws-s3-provisioner /usr/local/bin/
+COPY --from=build /app/cloudian-s3-operator /usr/local/bin/
 
-ENTRYPOINT ["/usr/local/bin/aws-s3-provisioner"]
+ENTRYPOINT ["/usr/local/bin/cloudian-s3-operator"]
 CMD ["-v=2", "-alsologtostderr"]

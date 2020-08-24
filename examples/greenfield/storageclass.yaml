@@ -5,11 +5,11 @@ kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
   name: hyperstore-temp-buckets
-provisioner: aws-s3.io/bucket
+provisioner: cloudian-s3.io/bucket
 parameters:
   region: reg-1
   secretName: s3-bucket-owner
-  secretNamespace: s3-provisioner
+  secretNamespace: cloudian-s3-operator
   s3Endpoint: http://s3-reg-1.landemo1.cloudian.eu
   iamEndpoint: http://iam.landemo1.cloudian.eu:16080
   # Set storagePolicyId to create buckets with specified policy

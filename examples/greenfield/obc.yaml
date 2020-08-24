@@ -1,9 +1,0 @@
-# Sample object bucket claim
-apiVersion: objectbucket.io/v1alpha1
-kind: ObjectBucketClaim
-metadata:
-  name: myobc
-  namespace: s3-provisioner
-spec:
-  generateBucketName: myobc-bucketprefix
-  storageClassName: hs-buckets

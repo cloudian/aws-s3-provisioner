@@ -1,5 +1,5 @@
 {
-	"name": "AWS S3 provisioner",
+	"name": "Cloudian S3 Operator",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "devenv",
 	// Use 'settings' to set *default* container specific settings.json values on container create. 
@@ -14,15 +14,16 @@
 	},
 	// Add the IDs of extensions you want installed when the container is created in the array below.
 	"extensions": [
-		"ms-vscode.go",
-		"timonwong.shellcheck",
 		"eamodio.gitlens",
 		"github.vscode-pull-request-github",
+		"golang.go",
 		"ms-kubernetes-tools.vscode-kubernetes-tools",
-		"ms-vsliveshare.vsliveshare"
+		"ms-vsliveshare.vsliveshare",
+		"redhat.vscode-yaml",
+		"timonwong.shellcheck"
 	],
 	"remoteUser": "builder",
-	"workspaceFolder": "/home/builder/aws-s3-provisioner",
+	"workspaceFolder": "/home/builder/cloudian-s3-operator",
 	"remoteEnv": {
 		"EDITOR": "code -r -w",
 	},

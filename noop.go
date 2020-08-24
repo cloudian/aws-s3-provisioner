@@ -1,1 +1,1 @@
-package aws_s3_provisioner
+package cloudian-s3-operator

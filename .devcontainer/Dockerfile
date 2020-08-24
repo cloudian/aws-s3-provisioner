@@ -86,7 +86,7 @@ RUN apt-get update \
     && echo "source <(kubectl completion bash)" >> /home/$USERNAME/.bashrc \
     && echo "source <(kind completion bash)" >> /home/$USERNAME/.bashrc \
     # Add our scripts to the path
-    && echo "PATH=\$PATH:\$HOME/aws-s3-provisioner/scripts" >> /home/$USERNAME/.bashrc \
+    && echo "PATH=\$PATH:\$HOME/cloudian-s3-operator/scripts" >> /home/$USERNAME/.bashrc \
     #
     # Ensure dependencies for vs live share extension are setup
     # For some reason live share doesn't install unless we do this step, despite $USERNAME being in sudo

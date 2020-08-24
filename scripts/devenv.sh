@@ -20,7 +20,7 @@ export COMPOSE_FILE
 export BUILD_USER=$(id -u)
 export BUILD_GROUP=$(id -g)
 DEV_CONTAINER="${COMPOSE_PROJECT_NAME}_devenv_1"
-DEV_EXEC="docker exec -it --user builder --workdir /home/builder/aws-s3-provisioner $DEV_CONTAINER"
+DEV_EXEC="docker exec -it --user builder --workdir /home/builder/cloudian-s3-operator $DEV_CONTAINER"
 
 post_create_step() {
   docker cp ~/.gitconfig "$DEV_CONTAINER:/home/builder/.gitconfig"

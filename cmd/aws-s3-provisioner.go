@@ -52,7 +52,7 @@ const (
 	httpPort        = 80
 	httpsPort       = 443
 	httpsScheme     = "https"
-	provisionerName = "aws-s3.io/bucket"
+	provisionerName = "cloudian-s3.io/bucket"
 	regionInsert    = "<REGION>"
 	s3Hostname      = "s3-" + regionInsert + ".amazonaws.com"
 	s3BucketArn     = "arn:aws:s3:::%s"
@@ -96,7 +96,6 @@ type awsS3Provisioner struct {
 }
 
 func NewAwsS3Provisioner(cfg *restclient.Config, s3Provisioner awsS3Provisioner) (*libbkt.Provisioner, error) {
-
 	const all_namespaces = ""
 	return libbkt.NewProvisioner(cfg, provisionerName, s3Provisioner, all_namespaces)
 }
@@ -104,7 +103,7 @@ func NewAwsS3Provisioner(cfg *restclient.Config, s3Provisioner awsS3Provisioner)
 // Return the aws default session.
 func awsDefaultSession() (*session.Session, error) {
 
-	glog.V(2).Infof("Creating AWS *default* session")
+	glog.V(2).Infof("Creating S3 *default* session")
 	return session.NewSession(&aws.Config{
 		Region: aws.String(defaultRegion),
 		//Credentials: credentials.NewStaticCredentials(os.Getenv),
@@ -250,7 +249,7 @@ func (p *awsS3Provisioner) awsSessionFromStorageClass(sc *storageV1.StorageClass
 	}
 
 	// use the OBC's SC to create our sessions, set receiver fields
-	glog.V(2).Infof("Creating AWS session using credentials from storage class %s's secret", sc.Name)
+	glog.V(2).Infof("Creating S3 session using credentials from storage class %s's secret", sc.Name)
 	p.region = region
 	p.s3Endpoint = s3URL
 	p.s3Session, err = session.NewSession(p.awsConfig(s3URL))
@@ -264,7 +263,7 @@ func (p *awsS3Provisioner) awsSessionFromStorageClass(sc *storageV1.StorageClass
 // Create the AWS session and S3 service and store them to the receiver.
 func (p *awsS3Provisioner) setSessionAndService(sc *storageV1.StorageClass) error {
 	// set the aws session
-	glog.V(2).Infof("Creating AWS session based on storageclass %q", sc.Name)
+	glog.V(2).Infof("Creating S3 session based on storageclass %q", sc.Name)
 	err := p.awsSessionFromStorageClass(sc)
 	if err != nil {
 		return fmt.Errorf("error creating AWS session: %v", err)
@@ -576,7 +575,7 @@ func main() {
 
 	handleFlags()
 
-	glog.Infof("AWS S3 Provisioner - main")
+	glog.Infof("Cloudian S3 Operator - main")
 	glog.V(2).Infof("flags: kubeconfig=%q; masterURL=%q", kubeconfig, masterURL)
 
 	config, clientset := createConfigAndClientOrDie(masterURL, kubeconfig)
@@ -591,17 +590,17 @@ func main() {
 	// provisioning lib.
 	S3ProvisionerController, err := NewAwsS3Provisioner(config, s3Prov)
 	if err != nil {
-		glog.Errorf("killing AWS S3 provisioner, error initializing library controller: %v", err)
+		glog.Errorf("killing Cloudian S3 operator, error initializing library controller: %v", err)
 		os.Exit(1)
 	}
 	glog.V(2).Infof("main: running %s provisioner...", provisionerName)
 	err = S3ProvisionerController.Run(stopCh)
 	if err != nil {
-		glog.Errorf("AWS S3 provisioner, error running provisioner : %v", err)
+		glog.Errorf("Cloudian S3 operator, error running operator : %v", err)
 	}
 
 	<-stopCh
-	glog.Infof("main: %s provisioner exited.", provisionerName)
+	glog.Infof("main: %s operator exited.", provisionerName)
 }
 
 // Set -kubeconfig and (deprecated) -master flags.

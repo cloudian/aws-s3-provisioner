@@ -66,7 +66,7 @@ kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
   name: <tag for this class, e.g. hyperstore-buckets>
-provisioner: aws-s3.io/bucket
+provisioner: cloudian-s3.io/bucket
 parameters:
   region: <region e.g. reg-1>
   secretName: s3-bucket-owner

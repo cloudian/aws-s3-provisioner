@@ -52,7 +52,7 @@ const (
 	httpPort        = 80
 	httpsPort       = 443
 	httpsScheme     = "https"
-	provisionerName = "aws-s3.io/bucket"
+	provisionerName = "cloudian-s3.io/bucket"
 	regionInsert    = "<REGION>"
 	s3Hostname      = "s3-" + regionInsert + ".amazonaws.com"
 	s3BucketArn     = "arn:aws:s3:::%s"

@@ -9,7 +9,7 @@ services:
                 USER_UID: $BUILD_USER
                 USER_GID: $BUILD_GROUP
         volumes:
-            - ..:/home/builder/aws-s3-provisioner     # Map in this workspace
+            - ..:/home/builder/cloudian-s3-operator     # Map in this workspace
             - $HOME/.ssh:/home/builder/.ssh           # Avoids need for ssh agent forwarding
             - $HOME/.aws:/home/builder/.aws           # Copy our aws creds into a kubenetes secret
             - $HOME/.docker:/home/builder/.docker     # Access cached docker login credentials

@@ -2,4 +2,4 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: s3-provisioner
+  name: cloudian-s3-operator

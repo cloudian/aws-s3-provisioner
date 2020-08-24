@@ -20,7 +20,7 @@ Next we need to deploy the Cloudian provisioner.  This only needs to be done onc
 
 Simply run
 ```yaml
-kubectl apply -f https://raw.githubusercontent.com/cloudian/aws-s3-provisioner/hyperstore/examples/cloudian-s3-provisioner.yaml
+kubectl apply -f https://raw.githubusercontent.com/cloudian/cloudian-s3-operator/hyperstore/examples/cloudian-s3-provisioner.yaml
 ```
 This deploys a provisioner in the `s3-provisioner` namespace.
 
@@ -34,7 +34,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: s3-bucket-owner
-  namespace: s3-provisioner
+  namespace: cloudian-s3-operator
 type: Opaque
 data:
   AWS_ACCESS_KEY_ID: base64_encoded_key
@@ -70,7 +70,7 @@ provisioner: aws-s3.io/bucket
 parameters:
   region: <region e.g. reg-1>
   secretName: s3-bucket-owner
-  secretNamespace: s3-provisioner
+  secretNamespace: cloudian-s3-operator
   bucketName: <existing bucket name, e.g. photos, or delete> - brownfield only
   s3Endpoint: <API server URL, e.g. http://s3-reg-1.landemo1.cloudian.eu>
   iamEndpoint: <IAM API server URL, e.g. http://iam.landemo1.cloudian.eu:16080>

@@ -1,14 +1,10 @@
 # cloudian-s3-operator
 
-### Build and Push the image
+### Deploying the operator
 
-Edit 
+See the [deployment guide](DEPLOY.md)
 
-```
- # scripts/release.sh --push
-```
+### Developing the operator
 
-### Using the S3 Provisioner to Test the Library
-
-See [bucket library testing](https://github.com/kube-object-storage/lib-bucket-provisioner/tree/master/hack#library-testing).
+See the [development guide](DEV.md)
 

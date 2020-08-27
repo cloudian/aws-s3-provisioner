@@ -1,3 +1,7 @@
+## Beta software
+
+The Cloudian Kubernetes S3 Operator is currently undergoing final test, and as such should be considered beta.
+
 ## Cloudian S3 Kubernetes Provisioner
 
 This guide shows you how to deploy the Cloudian S3 Provisioner for Kubernetes to allow you to use Object Bucket Claim, so your deployments have easy access to HyperStore buckets.

@@ -6,7 +6,7 @@ The Cloudian Kubernetes S3 Operator is currently undergoing final test, and as s
 
 ### Deploying the operator
 
-Please see the [Quick Start Guide](blob/hyperstore/CloudianK8sS3Operator_v-1.0-beta.pdf) to get started.
+Please see the [Quick Start Guide](CloudianK8sS3Operator_v-1.0-beta.pdf) to get started.
 
 ### Developing the operator
 
